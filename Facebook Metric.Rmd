@@ -1,0 +1,263 @@
+---
+title: "Coursework"
+author: "Tan Xiao Xuan"
+date: "2023-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+fb <- read.csv("dataset_Facebook.csv", header=TRUE, sep=";")
+fb <- subset(fb, select=c(Page.total.likes, Type, Category, Post.Month, Post.Weekday, Post.Hour, Paid, Lifetime.Post.Consumers))
+fb <- fb %>% drop_na()
+fb <- transform(fb, Type=as.factor(Type), Category=as.factor(Category), Paid=as.factor(Paid))
+```
+
+```{r}
+# page.total.likes
+eqscplot(fb$Page.total.likes, fb$Lifetime.Post.Consumers, pch=16, col="#00B8E7", main="Equal Scale Plot of Total Page Likes vs Lifetime Post Consumers", xlab="Total Page Likes", ylab="Lifetime Post Consumers")
+likes_group <- fb %>% group_by(Page.total.likes)  %>% summarise(av_consumers = sum(Lifetime.Post.Consumers),.groups = 'drop')
+eqscplot(likes_group$Page.total.likes, likes_group$av_consumers, pch=16, col="#00B8E7", main="Equal Scale Plot of Total Page Likes vs Lifetime Post Consumers", xlab="Total Page Likes", ylab="Lifetime Post Consumers")
+```
+As total page likes increases, lifetime post consumers remains reasonably constant, thus we infer that total page likes and lifetime post consumers are not linked.
+
+```{r}
+# Type
+type_group <- fb %>% group_by(Type)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+ggplot(type_group, aes(Type, av_consumers, fill=Type)) + geom_bar(stat="identity", position = "dodge") + labs(title="Type vs Average Lifetime Post Consumers", x="Type", y="Avergae Lifetime Post Consumers") + theme(plot.title = element_text(hjust = 0.5))
+# boxplot(fb$Total.Interactions~fb$Type, main="Type and Total Interactions", ylab="Total Interactions", xlab='Type', col="#F8766D")
+fb$type_link <- as.numeric(fb$Type=="Link")
+fb$type_photo <- as.numeric(fb$Type=="Photo")
+fb$type_status <- as.numeric(fb$Type=="Status")
+fb <- subset(fb, select=-c(Type))
+```
+
+```{r}
+# Category
+category_group <- fb %>% group_by(Category)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+category_group["category_names"] <- c("Action", "Inspiration", "Product")
+ggplot(category_group, aes(category_names, av_consumers, fill=category_names)) + geom_bar(stat="identity", position = "dodge") + labs(title="Catgeory vs Average Lifetime Post Consumers", x="Category", y="Avergae Lifetime Post Consumers", fill="Category") + theme(plot.title = element_text(hjust = 0.5))
+fb$category_action <- as.numeric(fb$Category==1)
+fb$category_product <- as.numeric(fb$Category==3)
+fb <- subset(fb, select=-c(Category))
+```
+
+```{r}
+# Paid
+paid_group <- fb %>% group_by(Paid)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+paid_group["paid_names"] <- c("No", "Yes")
+ggplot(paid_group, aes(paid_names, av_consumers, fill=paid_names)) + geom_bar(stat="identity", position = "dodge") + labs(title="Paid vs Average Lifetime Post Consumers", x="Paid", y="Avergae Lifetime Post Consumers", fill="Paid") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+# Post.Month
+month_group <- fb %>% group_by(Post.Month)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+month_group$month_names <- month.abb[month_group$Post.Month]
+month_group$month_names <- factor(month_group$month_names, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec") )
+ggplot(month_group, aes(month_names, av_consumers, fill= month_names)) + geom_bar(stat="identity", position = "dodge") + labs(title="Post Month vs Average Lifetime Post Consumers", x="Post Month", y="Avergae Lifetime Post Consumers", fill="Post Month") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+# Post.Weekday
+day_group <- fb %>% group_by(Post.Weekday)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+day_group["day_names"] <- c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+day_group$day_names <- factor(day_group$day_names, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+ggplot(day_group, aes(day_names, av_consumers, fill= day_names)) + geom_bar(stat="identity", position = "dodge") + labs(title="Post Day vs Average Lifetime Post Consumers", x="Post Day", y="Avergae Lifetime Post Consumers", fill="Post Day") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+# Post.Hour
+hour_group <- fb %>% group_by(Post.Hour)  %>% summarise(av_consumers = mean(Lifetime.Post.Consumers),.groups = 'drop')
+hour_group$Post.Hour <- as.factor(hour_group$Post.Hour)
+ggplot(hour_group, aes(Post.Hour, av_consumers, fill= Post.Hour)) + geom_bar(stat="identity", position = "dodge") + labs(title="Post Hour vs Average Lifetime Post Consumers", x="Post Hour", y="Avergae Lifetime Post Consumers", fill="Post Hour") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+# library('fastDummies')
+# fb <- dummy_cols(fb, select_columns = c('Post.Month', 'Post.Weekday', 'Post.Hour'),remove_selected_columns = TRUE)
+```
+
+```{r}
+hist(fb$Lifetime.Post.Consumers, breaks=20, col=rgb(1,0,0,0.5), border=F, freq=FALSE, main="Histogram of Lifetime Post Consumers", xlab="Lifetime Post Consumers")
+hist(log(fb$Lifetime.Post.Consumers + 1), breaks=20, col=rgb(1,0,0,0.5), border=F, freq=FALSE, main="Histogram of log(Lifetime Post Consumers + 1)", xlab="log(Lifetime Post Consumers + 1)")
+fb["log_consumers"] <- log(fb$Lifetime.Post.Consumers + 1)
+fb <- subset(fb, select=-c(Lifetime.Post.Consumers))
+```
+
+```{r}
+x <- model.matrix(log_consumers~., fb)[,-1]
+cormat <- round(cor(x),2)
+library(reshape2)
+library(ggplot2)
+get_upper_tri <- function(cormat){
+    cormat[lower.tri(cormat)]<- NA
+    return(cormat)
+}
+
+upper_tri <- get_upper_tri(cormat)
+# Melt the correlation matrix
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+    name="Pearson\nCorrelation") +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()+
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                title.position = "top", title.hjust = 0.5)) + labs(title="Correlation Heatmap of Predictor Variables") + theme(plot.title = element_text(hjust = 0.5))
+# Print the heatmap
+print(ggheatmap)
+```
+
+```{r}
+fb <- subset(fb, select=-c(Post.Month, type_photo))
+```
+
+```{r}
+# OLS
+fb.lm <- lm(log_consumers ~., data=fb)
+summary(fb.lm)
+```
+
+```{r}
+fb.lm2 <- update(fb.lm, .~. -Post.Weekday-Post.Hour-category_action-category_product)
+summary(fb.lm2)
+```
+
+```{r}
+# Diagnostic plot
+plot(fb.lm2)
+```
+
+```{r}
+anova(fb.lm2, fb.lm)
+```
+
+```{r}
+fb <- fb[-c(442, 418, 22, 236, 77, 23, 19, 233, 101),]
+fb <- subset(fb, select=c(Page.total.likes, Paid, type_link, type_status, log_consumers))
+```
+
+```{r}
+# train test split
+fb <- fb %>% mutate_at(c('Page.total.likes'), ~(scale(.) %>% as.vector))
+x <- model.matrix(log_consumers~., fb)[,-1]
+y <- fb$log_consumers
+lambda <- 10^seq(from=10, to=-4, length=100)
+set.seed(1234567)
+train <- sample(1:nrow(x), nrow(x) * 0.8)
+test <- -train
+x_train <- x[train,]
+y_train <- y[train]
+x_test <- x[test,]
+y_test <- y[test]
+```
+
+```{r}
+# least squares
+fb.lm <- lm(log_consumers~., data=fb[train,])
+fb.predict.lm <- predict(fb.lm, newdata=fb[test,])
+mse <- function(y1, y2){sum((y1-y2)^2)}
+mse(y_test, fb.predict.lm)
+coef(fb.lm)
+```
+
+```{r}
+# ridge
+fb.ridge <- glmnet(x_train, y_train, alpha=0, lambda=lambda)
+cv.fb.ridge <- cv.glmnet(x_train, y_train, alpha=0)
+bestlam <- cv.fb.ridge$lambda.min
+bestlam
+
+fb.ridge.pred <- predict(fb.ridge, s=bestlam, newx=x_test)
+mse(y_test, fb.ridge.pred)
+
+predict(fb.ridge, type="coefficients", s=bestlam)
+
+plot(fb.ridge, xvar="lambda")
+legend(x="topright",  inset = c(- 0, 0), col=1:4, legend=c("Total Page Likes", "Paid", "type_link", "type_status"), lwd=rep(1,11))
+abline(v=log(bestlam), lty=2)
+```
+
+```{r}
+# lasso
+fb.lasso <- glmnet(x_train, y_train, alpha=1, lambda=lambda)
+cv.fb.lasso <- cv.glmnet(x_train, y_train, alpha=1)
+bestlam <- cv.fb.lasso$lambda.min
+bestlam
+
+fb.lasso.pred <- predict(fb.lasso, s=bestlam, newx=x_test)
+mse(y_test, fb.lasso.pred)
+
+predict(fb.lasso, type="coefficients", s=bestlam)
+
+plot(fb.lasso, xvar="lambda")
+legend(x="topright",  inset = c(- 0, 0), col=1:4, legend=c("Total Page Likes", "Paid", "type_link", "type_status"), lwd=rep(1,11))
+abline(v=log(bestlam), lty=2)
+```
+
+```{r}
+# Principal components
+prcomp(x)
+cumsum(prcomp(x)$sdev^2)/sum(prcomp(x)$sdev^2)
+
+library("pls")
+fb.pcr <- pcr(log_consumers~., data=fb[train,], validation="CV")
+validationplot(fb.pcr)
+abline(v=3, lty=2)
+
+# prediction
+fb.pcr.pred <- predict(fb.pcr, fb[test,], ncomp=3)
+mse(y_test, fb.pcr.pred)
+```
+```{r}
+coef(fb.pcr, ncomp=3)
+```
+
+```{r}
+# Residuals
+lm.res <- fb.predict.lm - y_test
+ri.res <- fb.ridge.pred - y_test
+la.res <- fb.lasso.pred - y_test
+pc.res <- fb.pcr.pred - y_test
+ylim <- range(c(lm.res, ri.res, la.res, pc.res))
+plot(y_test, lm.res, ylim=ylim, ylab="Residuals", xlab="True Y Test Values", main="Residuals vs True Y Test Values")
+points(y_test, ri.res, col=2)
+points(y_test, la.res, col=3)
+points(y_test, pc.res, col=4)
+abline(h=0, lty=2)
+n <- length(pc.res)
+ytest <- y_test
+for(i in 1:n)	{
+	rvec <- c(lm.res[i], ri.res[i], la.res[i], pc.res[i])
+	ix <- which(abs(rvec)==min(abs(rvec)))
+	lines( c(ytest[i], ytest[i]), c(0, rvec[ix]), col=ix, lty=2) 
+	}
+legend(x="bottomleft", col=1:4, legend=c("Least Squares", "Ridge", "Lasso", "PCR"), pch=1)
+```
+
+```{r}
+hist(lm.res, col=rgb(1,0,0,0.5), breaks=10, border=F, freq=FALSE)
+hist(ri.res, col=rgb(1,0,0,0.5), breaks=10, border=F, freq=FALSE)
+hist(la.res, col=rgb(1,0,0,0.5), breaks=10, border=F, freq=FALSE)
+hist(pc.res, col=rgb(1,0,0,0.5), breaks=10, border=F, freq=FALSE)
+```
+
